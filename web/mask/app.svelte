@@ -85,6 +85,33 @@
     return totalBrightness / (width * height);
   }
 
+  // 获得图像边缘亮度
+  function getAverageCornerBrightness(ctx, width, height, cornerRatio) {
+  const imageData = ctx.getImageData(0, 0, width, height);
+  const data = imageData.data;
+  let totalBrightness = 0;
+  let count = 0;
+
+  // 计算角落的边界
+  const cornerWidth = Math.ceil(width * cornerRatio);
+  const cornerHeight = Math.ceil(height * cornerRatio);
+
+  // 计算四个角的亮度
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      if (x < cornerWidth || x >= width - cornerWidth || y < cornerHeight || y >= height - cornerHeight) {
+        const index = (y * width + x) * 4;
+        const brightness = (data[index] + data[index + 1] + data[index + 2]) / 3;
+        totalBrightness += brightness;
+        count++;
+      }
+    }
+  }
+
+  return totalBrightness / count;
+  }
+
+
   function createBoxShadowMark(_canvas, option) {
     _canvas.width = option.w || option.img.width;
     _canvas.height = option.h || option.img.height;
@@ -95,13 +122,12 @@
 
       // 添加黑色蒙层，突出主体图片
       if (!option.option.solid_bg) {
-        const averageBrightness = getAverageBrightness(ctx, _canvas.width, _canvas.height);
-        if (averageBrightness < 15) {
-          ctx.fillStyle = 'rgba(180, 180, 180, 0.2)'; // 灰色半透明覆盖层
-        } else if (averageBrightness < 20) {
-          ctx.fillStyle = 'rgba(158, 158, 158, 0.2)'; // 灰色半透明覆盖层
-        } else if (averageBrightness < 40) {
-          ctx.fillStyle = 'rgba(128, 128, 128, 0.2)'; // 灰色半透明覆盖层
+
+        const cornerRatio = 0.15; // 选取边缘像素的比例
+        const averageBrightness = getAverageCornerBrightness(ctx, _canvas.width, _canvas.height, cornerRatio);
+        const fillalpha = ((50 - averageBrightness) / 50 * 80 + 128).toFixed(0);
+        if (averageBrightness < 50) {
+          ctx.fillStyle = 'rgba('+ fillalpha +','+ fillalpha +','+ fillalpha +', 0.2)'; // 灰色半透明覆盖层
         } else {
           ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
         }
